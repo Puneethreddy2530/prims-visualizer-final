@@ -38,9 +38,10 @@ export default function PrimsVisualizer() {
   const NODE_RADIUS = 20;
   const SCALE_FACTOR = 0.05; // Convert pixels to smaller units
 
+  // check if on mobile
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
+      setIsMobile(window.innerWidth < 900);
     };
     checkMobile();
     window.addEventListener('resize', checkMobile);
@@ -668,6 +669,7 @@ export default function PrimsVisualizer() {
     speedMultiplierRef.current = 1;
   };
 
+  // canvas use effect
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -819,6 +821,9 @@ export default function PrimsVisualizer() {
     }
   }, [nodes, edges, dragStart, dragEnd, isDragging, mstEdges, visitedNodes, currentEdge, isDirected, editingNode, editingEdge, currentStateIndex, algorithmStates, executionCompleted, isPaused]);
 
+  //------------JSX------------//
+
+  // if on mobile
   if (isMobile) {
     return (
       <div className="flex items-center justify-center min-h-screen p-6" style={{ 
@@ -845,6 +850,7 @@ export default function PrimsVisualizer() {
     );
   }
 
+  // if on desktop (x > 900) 
   return (
     <div className='bruh'>
       <div 
@@ -857,12 +863,14 @@ export default function PrimsVisualizer() {
           backgroundAttachment: 'fixed'
         }}
       >
+        {/* header */}
         <h1 className="text-4xl font-bold" style={{ color: '#e0def4', textShadow: '0 2px 10px rgba(156, 207, 216, 0.3)', marginBottom: '1em' }}>
           Prim's Algorithm Visualizer
         </h1>
         
+        {/* main pane */}
         <div 
-          className="p-6 rounded-xl shadow-2xl w-full max-w-7xl transition-all duration-300" 
+          className="p-4 rounded-xl shadow-2xl w-full max-w-7xl transition-all duration-300" 
           style={{ 
             backgroundColor: 'rgba(42, 39, 63, 0.8)', 
             border: '2px solid #44415a',
@@ -870,163 +878,181 @@ export default function PrimsVisualizer() {
             WebkitBackdropFilter: 'blur(10px)' 
           }}
         >
+          {/* button bar */}
           <div className="flex gap-4 mb-4 flex-wrap items-center justify-between">
+            {/* left button group */}
             <div className="flex gap-4 flex-wrap items-center">
-            {!isRunning && !executionCompleted ? (
-              <button
-                onClick={runPrimsAlgorithm}
-                disabled={nodes.length === 0}
-                className="px-6 py-2 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 active:scale-95"
-                style={{
-                  backgroundColor: nodes.length === 0 ? '#44415a' : '#9ccfd8',
-                  color: '#232136',
-                  cursor: nodes.length === 0 ? 'not-allowed' : 'pointer',
-                  boxShadow: nodes.length === 0 ? 'none' : '0 4px 15px rgba(156, 207, 216, 0.4)'
-                }}
-              >
-                Calculate!
-              </button>
-            ) : isRunning ? (
-              <>
+              {/* calculate button */}
+              {!isRunning && !executionCompleted ? (
                 <button
-                  onClick={togglePause}
+                  onClick={runPrimsAlgorithm}
+                  disabled={nodes.length === 0}
                   className="px-6 py-2 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 active:scale-95"
-                  style={{ backgroundColor: '#f6c177', color: '#232136', boxShadow: '0 4px 15px rgba(246, 193, 119, 0.4)' }}
+                  style={{
+                    backgroundColor: nodes.length === 0 ? '#44415a' : '#9ccfd8',
+                    color: '#232136',
+                    cursor: nodes.length === 0 ? 'not-allowed' : 'pointer',
+                    boxShadow: nodes.length === 0 ? 'none' : '0 4px 15px rgba(156, 207, 216, 0.4)'
+                  }}
                 >
-                  {isPaused ? 'Resume' : 'Pause'}
+                  Calculate!
                 </button>
-                {isPaused && (
-                  <>
-                    <button
-                      onMouseDown={handlePrevMouseDown}
-                      onMouseUp={handlePrevMouseUp}
-                      onMouseLeave={handlePrevMouseUp}
-                      disabled={currentStateIndex <= 0}
-                      className={`px-4 py-2 rounded-lg font-semibold transition-all duration-200 ${
-                        currentStateIndex <= 0 ? '' : 'transform hover:scale-105 active:scale-95'
-                      }`}
-                      style={{
-                        backgroundColor: currentStateIndex <= 0 ? '#44415a' : isHoldingPrev ? '#9575cd' : '#c4a7e7',
-                        color: currentStateIndex <= 0 ? '#6e6a86' : '#232136',
-                        cursor: currentStateIndex <= 0 ? 'not-allowed' : 'pointer',
-                        boxShadow: currentStateIndex <= 0 ? 'none' : '0 4px 15px rgba(196, 167, 231, 0.4)'
-                      }}
-                    >
-                      ← Previous
-                    </button>
-                    <button
-                      onMouseDown={handleNextMouseDown}
-                      onMouseUp={handleNextMouseUp}
-                      onMouseLeave={handleNextMouseUp}
-                      disabled={currentStateIndex >= algorithmStates.length - 1}
-                      className={`px-4 py-2 rounded-lg font-semibold transition-all duration-200 ${
-                        currentStateIndex >= algorithmStates.length - 1 ? '' : 'transform hover:scale-105 active:scale-95'
-                      }`}
-                      style={{
-                        backgroundColor: currentStateIndex >= algorithmStates.length - 1 ? '#44415a' : isHoldingNext ? '#9575cd' : '#c4a7e7',
-                        color: currentStateIndex >= algorithmStates.length - 1 ? '#6e6a86' : '#232136',
-                        cursor: currentStateIndex >= algorithmStates.length - 1 ? 'not-allowed' : 'pointer',
-                        boxShadow: currentStateIndex >= algorithmStates.length - 1 ? 'none' : '0 4px 15px rgba(196, 167, 231, 0.4)'
-                      }}
-                    >
-                      Next →
-                    </button>
-                  </>
-                )}
-                <div className="flex items-center gap-2">
-                  <label className="text-sm font-semibold" style={{ color: '#e0def4' }}>Speed:</label>
-                  <input
-                    type="number"
-                    value={speedMultiplier}
-                    onChange={(e) => setSpeedMultiplier(Math.max(1, parseInt(e.target.value) || 10))}
-                    disabled={isPaused}
-                    className="px-2 py-1 rounded w-16 text-center transition-all duration-200"
-                    style={{
-                      backgroundColor: isPaused ? '#393552' : '#232136',
-                      color: isPaused ? '#6e6a86' : '#e0def4',
-                      border: '2px solid #44415a'
-                    }}
-                    min="1"
-                  />
-                  <span className="text-sm" style={{ color: '#908caa' }}>x</span>
+              ) : isRunning ? (
+                <>
+                  {/* Pause button */}
                   <button
-                    onMouseDown={handleSpeedUpMouseDown}
-                    onMouseUp={handleSpeedUpMouseUp}
-                    onMouseLeave={handleSpeedUpMouseUp}
-                    disabled={isPaused}
+                    onClick={togglePause}
+                    className="px-6 py-2 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 active:scale-95"
+                    style={{ backgroundColor: '#f6c177', color: '#232136', boxShadow: '0 4px 15px rgba(246, 193, 119, 0.4)' }}
+                  >
+                    {isPaused ? 'Resume' : 'Pause'}
+                  </button>
+                  {isPaused && (
+                    <>
+                      {/* previous <- button */}
+                      <button
+                        onMouseDown={handlePrevMouseDown}
+                        onMouseUp={handlePrevMouseUp}
+                        onMouseLeave={handlePrevMouseUp}
+                        disabled={currentStateIndex <= 0}
+                        className={`px-4 py-2 rounded-lg font-semibold transition-all duration-200 ${
+                          currentStateIndex <= 0 ? '' : 'transform hover:scale-105 active:scale-95'
+                        }`}
+                        style={{
+                          backgroundColor: currentStateIndex <= 0 ? '#44415a' : isHoldingPrev ? '#9575cd' : '#c4a7e7',
+                          color: currentStateIndex <= 0 ? '#6e6a86' : '#232136',
+                          cursor: currentStateIndex <= 0 ? 'not-allowed' : 'pointer',
+                          boxShadow: currentStateIndex <= 0 ? 'none' : '0 4px 15px rgba(196, 167, 231, 0.4)'
+                        }}
+                      >
+                        ← Previous
+                      </button>
+
+                      {/* next -> button */}
+                      <button
+                        onMouseDown={handleNextMouseDown}
+                        onMouseUp={handleNextMouseUp}
+                        onMouseLeave={handleNextMouseUp}
+                        disabled={currentStateIndex >= algorithmStates.length - 1}
+                        className={`px-4 py-2 rounded-lg font-semibold transition-all duration-200 ${
+                          currentStateIndex >= algorithmStates.length - 1 ? '' : 'transform hover:scale-105 active:scale-95'
+                        }`}
+                        style={{
+                          backgroundColor: currentStateIndex >= algorithmStates.length - 1 ? '#44415a' : isHoldingNext ? '#9575cd' : '#c4a7e7',
+                          color: currentStateIndex >= algorithmStates.length - 1 ? '#6e6a86' : '#232136',
+                          cursor: currentStateIndex >= algorithmStates.length - 1 ? 'not-allowed' : 'pointer',
+                          boxShadow: currentStateIndex >= algorithmStates.length - 1 ? 'none' : '0 4px 15px rgba(196, 167, 231, 0.4)'
+                        }}
+                      >
+                        Next →
+                      </button>
+                    </>
+                  )}
+
+                  {/* speed controls */}
+                  <div className="flex items-center gap-2">
+                    {/* set speed input */}
+                    <label className="text-sm font-semibold" style={{ color: '#e0def4' }}>Speed:</label>
+                    <input
+                      type="number"
+                      value={speedMultiplier}
+                      onChange={(e) => setSpeedMultiplier(Math.max(1, parseInt(e.target.value) || 10))}
+                      disabled={isPaused}
+                      className="px-2 py-1 rounded-lg w-16 text-center transition-all duration-200"
+                      style={{
+                        backgroundColor: isPaused ? '#393552' : '#232136',
+                        color: isPaused ? '#6e6a86' : '#e0def4',
+                        border: '2px solid #44415a'
+                      }}
+                      min="1"
+                    />
+                    <span className="text-sm" style={{ color: '#908caa' }}>×</span>
+                    {/* speed up button */}
+                    <button
+                      onMouseDown={handleSpeedUpMouseDown}
+                      onMouseUp={handleSpeedUpMouseUp}
+                      onMouseLeave={handleSpeedUpMouseUp}
+                      disabled={isPaused}
+                      className={`px-4 py-2 rounded-lg font-semibold transition-all duration-200 ${
+                        isPaused ? '' : 'transform hover:scale-105 active:scale-95'
+                      }`}
+                      style={{
+                        backgroundColor: isPaused ? '#44415a' : isSpeedingUp ? '#d97757' : '#ea9a97',
+                        color: '#232136',
+                        cursor: isPaused ? 'not-allowed' : 'pointer',
+                        boxShadow: isPaused ? 'none' : '0 4px 15px rgba(234, 154, 151, 0.4)'
+                      }}
+                    >
+                      {isSpeedingUp ? '⚡ Speeding...' : 'Hold to Speed up'}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="flex gap-2">
+                  {/* previous <- button */}
+                  <button
+                    onMouseDown={handlePrevMouseDown}
+                    onMouseUp={handlePrevMouseUp}
+                    onMouseLeave={handlePrevMouseUp}
+                    disabled={currentStateIndex <= 0}
                     className={`px-4 py-2 rounded-lg font-semibold transition-all duration-200 ${
-                      isPaused ? '' : 'transform hover:scale-105 active:scale-95'
+                      currentStateIndex <= 0 ? '' : 'transform hover:scale-105 active:scale-95'
                     }`}
                     style={{
-                      backgroundColor: isPaused ? '#44415a' : isSpeedingUp ? '#d97757' : '#ea9a97',
-                      color: '#232136',
-                      cursor: isPaused ? 'not-allowed' : 'pointer',
-                      boxShadow: isPaused ? 'none' : '0 4px 15px rgba(234, 154, 151, 0.4)'
+                      backgroundColor: currentStateIndex <= 0 ? '#44415a' : isHoldingPrev ? '#9575cd' : '#c4a7e7',
+                      color: currentStateIndex <= 0 ? '#6e6a86' : '#232136',
+                      cursor: currentStateIndex <= 0 ? 'not-allowed' : 'pointer',
+                      boxShadow: currentStateIndex <= 0 ? 'none' : '0 4px 15px rgba(196, 167, 231, 0.4)'
                     }}
                   >
-                    {isSpeedingUp ? '⚡ Speeding...' : 'Hold to Speed up'}
+                    ← Previous
+                  </button>
+
+                  {/* next -> button */}
+                  <button
+                    onMouseDown={handleNextMouseDown}
+                    onMouseUp={handleNextMouseUp}
+                    onMouseLeave={handleNextMouseUp}
+                    disabled={currentStateIndex >= algorithmStates.length - 1}
+                    className={`px-4 py-2 rounded-lg font-semibold transition-all duration-200 ${
+                      currentStateIndex >= algorithmStates.length - 1 ? '' : 'transform hover:scale-105 active:scale-95'
+                    }`}
+                    style={{
+                      backgroundColor: currentStateIndex >= algorithmStates.length - 1 ? '#44415a' : isHoldingNext ? '#9575cd' : '#c4a7e7',
+                      color: currentStateIndex >= algorithmStates.length - 1 ? '#6e6a86' : '#232136',
+                      cursor: currentStateIndex >= algorithmStates.length - 1 ? 'not-allowed' : 'pointer',
+                      boxShadow: currentStateIndex >= algorithmStates.length - 1 ? 'none' : '0 4px 15px rgba(196, 167, 231, 0.4)'
+                    }}
+                  >
+                    Next →
                   </button>
                 </div>
-              </>
-            ) : (
-              <div className="flex gap-2">
-                <button
-                  onMouseDown={handlePrevMouseDown}
-                  onMouseUp={handlePrevMouseUp}
-                  onMouseLeave={handlePrevMouseUp}
-                  disabled={currentStateIndex <= 0}
-                  className={`px-4 py-2 rounded-lg font-semibold transition-all duration-200 ${
-                    currentStateIndex <= 0 ? '' : 'transform hover:scale-105 active:scale-95'
-                  }`}
-                  style={{
-                    backgroundColor: currentStateIndex <= 0 ? '#44415a' : isHoldingPrev ? '#9575cd' : '#c4a7e7',
-                    color: currentStateIndex <= 0 ? '#6e6a86' : '#232136',
-                    cursor: currentStateIndex <= 0 ? 'not-allowed' : 'pointer',
-                    boxShadow: currentStateIndex <= 0 ? 'none' : '0 4px 15px rgba(196, 167, 231, 0.4)'
-                  }}
-                >
-                  ← Previous
-                </button>
-                <button
-                  onMouseDown={handleNextMouseDown}
-                  onMouseUp={handleNextMouseUp}
-                  onMouseLeave={handleNextMouseUp}
-                  disabled={currentStateIndex >= algorithmStates.length - 1}
-                  className={`px-4 py-2 rounded-lg font-semibold transition-all duration-200 ${
-                    currentStateIndex >= algorithmStates.length - 1 ? '' : 'transform hover:scale-105 active:scale-95'
-                  }`}
-                  style={{
-                    backgroundColor: currentStateIndex >= algorithmStates.length - 1 ? '#44415a' : isHoldingNext ? '#9575cd' : '#c4a7e7',
-                    color: currentStateIndex >= algorithmStates.length - 1 ? '#6e6a86' : '#232136',
-                    cursor: currentStateIndex >= algorithmStates.length - 1 ? 'not-allowed' : 'pointer',
-                    boxShadow: currentStateIndex >= algorithmStates.length - 1 ? 'none' : '0 4px 15px rgba(196, 167, 231, 0.4)'
-                  }}
-                >
-                  Next →
-                </button>
-              </div>
-            )}
-            <button
-              onClick={reset}
-              className="px-6 py-2 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 active:scale-95"
-              style={{ backgroundColor: '#eb6f92', color: '#232136', boxShadow: '0 4px 15px rgba(235, 111, 146, 0.4)' }}
-            >
-              Reset
-            </button>
-            
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={isDirected}
-                onChange={handleDirectedChange}
-                disabled={isRunning}
-                className="w-4 h-4 cursor-pointer accent-iris"
-                style={{ accentColor: '#c4a7e7' }}
-              />
-              <span className="font-semibold" style={{ color: '#e0def4' }}>Directed Graph</span>
-            </label>
+              )}
+
+              {/* reset button */}
+              <button
+                onClick={reset}
+                className="px-6 py-2 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 active:scale-95"
+                style={{ backgroundColor: '#eb6f92', color: '#232136', boxShadow: '0 4px 15px rgba(235, 111, 146, 0.4)' }}
+              >
+                Reset
+              </button>
+              
+              {/* is directed graph checkbox */}
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isDirected}
+                  onChange={handleDirectedChange}
+                  disabled={isRunning}
+                  className="w-4 h-4 cursor-pointer accent-iris"
+                  style={{ accentColor: '#c4a7e7' }}
+                />
+                <span className="font-semibold" style={{ color: '#e0def4' }}>Directed Graph</span>
+              </label>
             </div>
             
+            {/* show instructions button (i) */}
             <button
               onClick={() => setShowInstructions(!showInstructions)}
               className="p-2 rounded-lg transition-all duration-200 transform hover:scale-110 active:scale-95"
@@ -1041,6 +1067,7 @@ export default function PrimsVisualizer() {
             </button>
           </div>
 
+          {/* when editing nodes */}
           {editingNode && (
             <div className="mb-4 p-3 rounded-lg border-2 flex gap-2 items-center animate-fadeIn" style={{ backgroundColor: '#393552', borderColor: '#f6c177' }}>
               <span className="font-semibold" style={{ color: '#e0def4' }}>Edit node name:</span>
@@ -1050,20 +1077,20 @@ export default function PrimsVisualizer() {
                 onChange={(e) => setNodeNameInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && saveNodeName()}
                 onFocus={(e) => e.target.select()}
-                className="px-2 py-1 rounded transition-all duration-200"
+                className="px-2 py-1 rounded-lg transition-all duration-200"
                 style={{ backgroundColor: '#232136', color: '#e0def4', border: '2px solid #44415a' }}
                 autoFocus
               />
               <button
                 onClick={saveNodeName}
-                className="px-4 py-1 rounded transition-all duration-200 transform hover:scale-105 active:scale-95"
+                className="px-4 py-1 rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95"
                 style={{ backgroundColor: '#9ccfd8', color: '#232136' }}
               >
                 Save
               </button>
               <button
                 onClick={() => setEditingNode(null)}
-                className="px-4 py-1 rounded transition-all duration-200 transform hover:scale-105 active:scale-95"
+                className="px-4 py-1 rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95"
                 style={{ backgroundColor: '#6e6a86', color: '#e0def4' }}
               >
                 Cancel
@@ -1071,6 +1098,7 @@ export default function PrimsVisualizer() {
             </div>
           )}
 
+          {/* when editing edges */}
           {editingEdge && (
             <div className="mb-4 p-3 rounded-lg border-2 flex gap-2 items-center animate-fadeIn" style={{ backgroundColor: '#393552', borderColor: '#f6c177' }}>
               <span className="font-semibold" style={{ color: '#e0def4' }}>Edit edge weight:</span>
@@ -1080,20 +1108,20 @@ export default function PrimsVisualizer() {
                 onChange={(e) => setEdgeWeightInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && saveEdgeWeight()}
                 onFocus={(e) => e.target.select()}
-                className="px-2 py-1 rounded w-20 transition-all duration-200"
+                className="px-2 py-1 rounded-lg w-20 transition-all duration-200"
                 style={{ backgroundColor: '#232136', color: '#e0def4', border: '2px solid #44415a' }}
                 autoFocus
               />
               <button
                 onClick={saveEdgeWeight}
-                className="px-4 py-1 rounded transition-all duration-200 transform hover:scale-105 active:scale-95"
+                className="px-4 py-1 rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95"
                 style={{ backgroundColor: '#9ccfd8', color: '#232136' }}
               >
                 Save
               </button>
               <button
                 onClick={() => setEditingEdge(null)}
-                className="px-4 py-1 rounded transition-all duration-200 transform hover:scale-105 active:scale-95"
+                className="px-4 py-1 rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95"
                 style={{ backgroundColor: '#6e6a86', color: '#e0def4' }}
               >
                 Cancel
@@ -1101,6 +1129,7 @@ export default function PrimsVisualizer() {
             </div>
           )}
 
+          {/* more info section (collapsible) */}
           {showInstructions && (
             <div className="mb-4 p-3 rounded-lg border-2 animate-fadeIn" style={{ backgroundColor: '#393552', borderColor: '#9ccfd8' }}>
               <p className="text-sm" style={{ color: '#e0def4' }}>
@@ -1109,13 +1138,17 @@ export default function PrimsVisualizer() {
             </div>
           )}
 
+          {/* current algorithm step info */}
           {stepInfo && (
             <div className="mb-4 p-3 rounded-lg border-2 animate-fadeIn" style={{ backgroundColor: '#393552', borderColor: '#9ccfd8' }}>
               <p className="text-sm font-semibold" style={{ color: '#e0def4' }}>{stepInfo}</p>
             </div>
           )}
 
+          {/* sub-panes */}
           <div className="flex gap-4 items-start">
+
+            {/* left sub-pane */}
             <div 
               className="sticky top-6 self-start" 
               style={{
@@ -1144,10 +1177,35 @@ export default function PrimsVisualizer() {
                   boxShadow: '0 8px 30px rgba(0, 0, 0, 0.4)'
                 }}
               />
+                        
+              {/* Canvas Info */}
+              <div className="mt-4 flex gap-6 text-sm flex-wrap">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded-full" style={{ backgroundColor: '#c4a7e7' }}></div>
+                  <span style={{ color: '#e0def4' }}>Unvisited Node</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded-full" style={{ backgroundColor: '#9ccfd8' }}></div>
+                  <span style={{ color: '#e0def4' }}>Visited Node</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-1" style={{ backgroundColor: '#6e6a86' }}></div>
+                  <span style={{ color: '#e0def4' }}>Edge</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-1" style={{ backgroundColor: '#9ccfd8' }}></div>
+                  <span style={{ color: '#e0def4' }}>MST Edge</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-1" style={{ backgroundColor: '#f6c177' }}></div>
+                  <span style={{ color: '#e0def4' }}>Considering</span>
+                </div>
+              </div>
             </div>
-
+            
+            {/* right sub-pane */}
             <div className="flex-1 overflow-auto animate-fadeIn">
-              {/* --- Algorithm State Table --- */}
+              {/* --- algorithm state table --- */}
               {tableData.length > 0 && (
                 <>
                   <h3 className="text-lg font-bold mb-2" style={{ color: '#e0def4' }}>
@@ -1190,7 +1248,7 @@ export default function PrimsVisualizer() {
                 </>
               )}
 
-              {/* --- Prim’s Algorithm Info Section --- */}
+              {/* --- Prim’s Algorithm info section --- */}
               <div className="p-4 rounded-lg border-2" style={{ backgroundColor: '#393552', borderColor: '#9ccfd8' }}>
                 <h3 className="text-lg font-bold mb-2" style={{ color: '#e0def4' }}>About Prim’s Algorithm</h3>
                 <p className="text-sm leading-relaxed" style={{ color: '#e0def4' }}>
@@ -1212,31 +1270,9 @@ export default function PrimsVisualizer() {
               </div>
             </div>
           </div>
-
-          <div className="mt-4 flex gap-6 text-sm flex-wrap">
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded-full" style={{ backgroundColor: '#c4a7e7' }}></div>
-              <span style={{ color: '#e0def4' }}>Unvisited Node</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded-full" style={{ backgroundColor: '#9ccfd8' }}></div>
-              <span style={{ color: '#e0def4' }}>Visited Node</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-1" style={{ backgroundColor: '#6e6a86' }}></div>
-              <span style={{ color: '#e0def4' }}>Edge</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-1" style={{ backgroundColor: '#9ccfd8' }}></div>
-              <span style={{ color: '#e0def4' }}>MST Edge</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-1" style={{ backgroundColor: '#f6c177' }}></div>
-              <span style={{ color: '#e0def4' }}>Considering</span>
-            </div>
-          </div>
         </div>
 
+        {/* footer */}
         <footer className="mt-6 text-sm font-semibold text-center" style={{ color: '#908caa' }}>
           Created for a Computer Networks Project. Participants: 24BCE5375, 24BCE5406.
         </footer>
