@@ -100,12 +100,18 @@ export default function PrimsVisualizer() {
       const dy = toNode.y - fromNode.y;
       const len = Math.hypot(dx, dy) || 1;
 
-      const offset = 15;
+      const offset = 28;
       const perpX = (-dy / len) * offset;
       const perpY = ( dx / len) * offset;
 
       // Stable split: for one direction use +, for the reverse use -
-      const sign = edge.from < edge.to ? 1 : -1;
+      const isForwardEdge = edges.some(e => e.from === fromNode.id && e.to === toNode.id);
+const isReverseEdge = edges.some(e => e.from === toNode.id && e.to === fromNode.id);
+const sign = isForwardEdge && isReverseEdge
+  ? (edge.from === fromNode.id ? 1 : -1)
+  : 0;
+
+
 
       const labelX = midX + perpX * 0.6 * sign;
       const labelY = midY + perpY * 0.6 * sign;
@@ -293,20 +299,25 @@ export default function PrimsVisualizer() {
   };
 
   const saveEdgeWeight = () => {
-    if (editingEdge) {
-      const newWeight = parseFloat(edgeWeightInput);
-      if (!isNaN(newWeight)) {
-        setEdges(edges.map(edge =>
-          edge.from === editingEdge.from && edge.to === editingEdge.to
-            ? { ...edge, weight: newWeight }
-            : edge
-        ));
-      }
-      setEditingEdge(null);
-      setEdgeWeightInput('');
-      resetExecutionState();
-    }
-  };
+  if (!editingEdge) return;
+
+  let val = parseFloat(edgeWeightInput);
+  if (isNaN(val)) return;
+
+  // ✅ auto-round to 1 decimal
+  val = Math.round(val * 10) / 10;
+
+  setEdges(edges.map(edge =>
+    edge.from === editingEdge.from && edge.to === editingEdge.to
+      ? { ...edge, weight: val }
+      : edge
+  ));
+
+  setEditingEdge(null);
+  setEdgeWeightInput('');
+  resetExecutionState();
+};
+
 
   const resetExecutionState = () => {
     setMstEdges([]);
@@ -900,79 +911,66 @@ const downloadPDF = async () => {
 
   const lineWidth = (isCurrent || isMst) ? 4 : 2;
 
-  if (hasReverseEdge) {
-    // Draw curved line for bidirectional edges
-const dx = toNode.x - fromNode.x;
-const dy = toNode.y - fromNode.y;
-const dist = Math.hypot(dx, dy) || 1;
+ if (hasReverseEdge) {
+    // ---- Weight labels for curved bidirectional edges (two separate bubbles) ----
+    const dx = toNode.x - fromNode.x; 
+    const dy = toNode.y - fromNode.y; 
+    const dist = Math.hypot(dx, dy) || 1;
 
-// Perpendicular offset
-const offset = 15;
-const perpX = (-dy / dist) * offset;
-const perpY = ( dx / dist) * offset;
+    const offset = 28; 
+    const perpX = (-dy / dist) * offset; 
+    const perpY = ( dx / dist) * offset;
 
-// Put A→B on one side, B→A on the other (stable by id)
-const sign = edge.from < edge.to ? 1 : -1;
+    // Put A→B on top, B→A bottom (stable) 
+    const isForwardEdge = edges.some(e => e.from === fromNode.id && e.to === toNode.id);
+const isReverseEdge = edges.some(e => e.from === toNode.id && e.to === fromNode.id);
+const sign = isForwardEdge && isReverseEdge
+  ? (edge.from === fromNode.id ? 1 : -1)
+  : 0;
 
-// Control point for this specific directed edge
-const controlX = (fromNode.x + toNode.x) / 2 + perpX * sign;
-const controlY = (fromNode.y + toNode.y) / 2 + perpY * sign;
 
-ctx.beginPath();
+
+    const baseX = (fromNode.x + toNode.x) / 2; 
+    const baseY = (fromNode.y + toNode.y) / 2;
+
+    // Position for this direction (top or bottom depending on sign) 
+    const labelX = baseX + perpX * 0.6 * sign; 
+    const labelY = baseY + perpY * 0.6 * sign;
+
+    // Check if this specific direction is being edited 
+    const isEditingThis = editingEdge &&
+      editingEdge.from === edge.from &&
+      editingEdge.to === edge.to;
+
+    ctx.beginPath();
 ctx.moveTo(fromNode.x, fromNode.y);
-ctx.quadraticCurveTo(controlX, controlY, toNode.x, toNode.y);
+ctx.quadraticCurveTo(
+  (fromNode.x + toNode.x) / 2 + perpX * 1.2,
+  (fromNode.y + toNode.y) / 2 + perpY * 1.2,
+  toNode.x,
+  toNode.y
+);
 ctx.strokeStyle = strokeColor;
 ctx.lineWidth = lineWidth;
 ctx.stroke();
 
-// Arrow on the curve (unchanged logic, uses control point above)
-if (isDirected) {
-  const t = 0.85;
-  const curveX = (1-t)*(1-t)*fromNode.x + 2*(1-t)*t*controlX + t*t*toNode.x;
-  const curveY = (1-t)*(1-t)*fromNode.y + 2*(1-t)*t*controlY + t*t*toNode.y;
 
-  const tangentX = 2*(1-t)*(controlX - fromNode.x) + 2*t*(toNode.x - controlX);
-  const tangentY = 2*(1-t)*(controlY - fromNode.y) + 2*t*(toNode.y - controlY);
-  const angle = Math.atan2(tangentY, tangentX);
+    // Draw label bubble 
+    ctx.fillStyle = isEditingThis ? 'rgba(246, 193, 119, 0.7)' : 'rgba(35, 33, 54, 0.6)'; 
+    ctx.beginPath(); 
+    ctx.roundRect(labelX - 18, labelY - 12, 36, 24, 6); 
+    ctx.fill();
 
-  const arrowSize = 12;
-  ctx.beginPath();
-  ctx.moveTo(curveX, curveY);
-  ctx.lineTo(curveX - arrowSize * Math.cos(angle - Math.PI/6),
-             curveY - arrowSize * Math.sin(angle - Math.PI/6));
-  ctx.moveTo(curveX, curveY);
-  ctx.lineTo(curveX - arrowSize * Math.cos(angle + Math.PI/6),
-             curveY - arrowSize * Math.sin(angle + Math.PI/6));
-  ctx.strokeStyle = strokeColor;
-  ctx.lineWidth = lineWidth;
-  ctx.stroke();
-}
+    ctx.strokeStyle = isEditingThis ? 'rgba(234, 154, 151, 0.8)' : 'rgba(68, 65, 90, 0.7)'; 
+    ctx.lineWidth = 2; 
+    ctx.stroke();
 
-    // Draw weight label on the curve
-    // ---- Weight label for curved bidirectional edge ----
-const labelX = (fromNode.x + toNode.x) / 2 + perpX * 0.6 * sign;
-const labelY = (fromNode.y + toNode.y) / 2 + perpY * 0.6 * sign;
-
-const isEditingThis = editingEdge &&
-  editingEdge.from === edge.from &&
-  editingEdge.to === edge.to;
-
-ctx.fillStyle = isEditingThis ? 'rgba(246, 193, 119, 0.7)' : 'rgba(35, 33, 54, 0.6)';
-ctx.beginPath();
-ctx.roundRect(labelX - 18, labelY - 12, 36, 24, 6);
-ctx.fill();
-
-ctx.strokeStyle = isEditingThis ? 'rgba(234, 154, 151, 0.8)' : 'rgba(68, 65, 90, 0.7)';
-ctx.lineWidth = 2;
-ctx.stroke();
-
-ctx.fillStyle = isEditingThis ? '#232136' : '#e0def4';
-ctx.font = '14px Arial';
-ctx.textAlign = 'center';
-ctx.textBaseline = 'middle';
-ctx.fillText(String(edge.weight), labelX, labelY);
-
-  } else {
+    ctx.fillStyle = isEditingThis ? '#232136' : '#e0def4'; 
+    ctx.font = '14px Arial'; 
+    ctx.textAlign = 'center'; 
+    ctx.textBaseline = 'middle'; 
+    ctx.fillText(String(edge.weight), labelX, labelY);
+  } else{
     // Draw straight line for single direction or undirected
     ctx.beginPath();
     ctx.moveTo(fromNode.x, fromNode.y);
@@ -1372,8 +1370,7 @@ ctx.fillText(String(edge.weight), labelX, labelY);
             <div className="mb-4 p-3 rounded-lg border-2 flex gap-2 items-center animate-fadeIn" style={{ backgroundColor: '#393552', borderColor: '#f6c177' }}>
               <span className="font-semibold" style={{ color: '#e0def4' }}>Edit edge weight:</span>
               <input
-                type="number"
-                step="0.1"
+                type="text"
                 value={edgeWeightInput}
                 onChange={(e) => setEdgeWeightInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && saveEdgeWeight()}
