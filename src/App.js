@@ -229,10 +229,9 @@ export default function PrimsVisualizer() {
       
       if (endNode && endNode.id !== dragStart.id) {
         const edgeExists = edges.some(
-          edge =>
-            (edge.from === dragStart.id && edge.to === endNode.id) ||
-            (!isDirected && edge.from === endNode.id && edge.to === dragStart.id)
-        );
+  edge => edge.from === dragStart.id && edge.to === endNode.id
+);
+
 
         if (!edgeExists) {
           const weight = Math.round(distance(dragStart, endNode) * 10) / 10; // One decimal place
@@ -827,7 +826,7 @@ const downloadPDF = async () => {
   });
 
   // ✅ NEW FILE NAME
-  pdf.save("Introduction to Algorithms.pdf");
+  pdf.save("Prims_Algorithm_Output.pdf");
   setIsDownloading(false);
 };
 
