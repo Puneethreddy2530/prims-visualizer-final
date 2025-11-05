@@ -1628,13 +1628,18 @@ const downloadPDF = async () => {
 
 
         {/* --- Directed Mode --- */}
-        <div>
-          <h4 className="font-bold mb-1">Directed vs Undirected Mode</h4>
-          <ul className="list-disc ml-5 space-y-1">
-            <li>When “Directed” is OFF, edges have no arrows and are treated as normal undirected edges.</li>
-            <li>When “Directed” is ON, arrows appear and direction is considered.</li>
-          </ul>
-        </div>
+<div>
+  <h4 className="font-bold mb-1">Directed vs Undirected Mode</h4>
+  <ul className="list-disc ml-5 space-y-1">
+    <li>When “Directed” is OFF, edges are normal (no arrows) and can be used both ways.</li>
+    <li>When “Directed” is ON, arrows appear and direction matters.</li>
+    <li>Dragging from A → B creates a forward arrow only.</li>
+    <li>If you also drag from B → A, a reverse arrow is added and shown as a curved line.</li>
+    <li>Forward edge = normal color, reverse edge = purple color for clarity.</li>
+    <li>Weights for A→B and B→A are stored separately and can be edited independently.</li>
+  </ul>
+</div>
+
 
         {/* --- Colour Legend --- */}
         <div>
