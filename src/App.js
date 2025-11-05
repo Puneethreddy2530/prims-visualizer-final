@@ -110,15 +110,17 @@ export default function PrimsVisualizer() {
       const labelX = midX + perpX * 0.6 * sign;
       const labelY = midY + perpY * 0.6 * sign;
 
-      if (Math.hypot(x - labelX, y - labelY) <= HIT_R) return edge;
+      if (Math.hypot(x - labelX, y - labelY) <= HIT_R) {
+        return edge; // ✅ Clicked correct top/bottom direction
+      }
     } else {
       // Single label in the middle for undirected or single directed edge
       if (Math.hypot(x - midX, y - midY) <= HIT_R) return edge;
     }
   }
+
   return null;
 };
-
 
   const handleCanvasClick = (e) => {
     if (isRunning) return;
@@ -947,24 +949,29 @@ if (isDirected) {
 }
 
     // Draw weight label on the curve
-    const labelX = (fromNode.x + toNode.x) / 2 + perpX * 0.6;
-    const labelY = (fromNode.y + toNode.y) / 2 + perpY * 0.6;
-    const isEditingThis = editingEdge && editingEdge.from === edge.from && editingEdge.to === edge.to;
+    // ---- Weight label for curved bidirectional edge ----
+const labelX = (fromNode.x + toNode.x) / 2 + perpX * 0.6 * sign;
+const labelY = (fromNode.y + toNode.y) / 2 + perpY * 0.6 * sign;
 
-    ctx.fillStyle = isEditingThis ? 'rgba(246, 193, 119, 0.7)' : 'rgba(35, 33, 54, 0.6)';
-    ctx.beginPath();
-    ctx.roundRect(labelX - 18, labelY - 12, 36, 24, 6);
-    ctx.fill();
+const isEditingThis = editingEdge &&
+  editingEdge.from === edge.from &&
+  editingEdge.to === edge.to;
 
-    ctx.strokeStyle = isEditingThis ? 'rgba(234, 154, 151, 0.8)' : 'rgba(68, 65, 90, 0.7)';
-    ctx.lineWidth = 2;
-    ctx.stroke();
+ctx.fillStyle = isEditingThis ? 'rgba(246, 193, 119, 0.7)' : 'rgba(35, 33, 54, 0.6)';
+ctx.beginPath();
+ctx.roundRect(labelX - 18, labelY - 12, 36, 24, 6);
+ctx.fill();
 
-    ctx.fillStyle = isEditingThis ? '#232136' : '#e0def4';
-    ctx.font = '14px Arial';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(edge.weight, labelX, labelY);
+ctx.strokeStyle = isEditingThis ? 'rgba(234, 154, 151, 0.8)' : 'rgba(68, 65, 90, 0.7)';
+ctx.lineWidth = 2;
+ctx.stroke();
+
+ctx.fillStyle = isEditingThis ? '#232136' : '#e0def4';
+ctx.font = '14px Arial';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+ctx.fillText(String(edge.weight), labelX, labelY);
+
   } else {
     // Draw straight line for single direction or undirected
     ctx.beginPath();
