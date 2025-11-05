@@ -82,67 +82,67 @@ export default function PrimsVisualizer() {
   };
 
 const findEdgeAt = (x, y) => {
-  const HIT_R = 18;
+  const HIT_R = 18; // Click radius
 
   for (const edge of edges) {
     const fromNode = nodes.find(n => n.id === edge.from);
     const toNode   = nodes.find(n => n.id === edge.to);
     if (!fromNode || !toNode) continue;
 
-    const dx = toNode.x - fromNode.x;
-    const dy = toNode.y - fromNode.y;
-    const dist = Math.hypot(dx, dy) || 1;
-
     const hasReverse =
       isDirected && edges.some(e => e.from === edge.to && e.to === edge.from);
 
     if (hasReverse) {
-      // same geometry as draw (must match!)
-      const pair = edges.filter(e =>
-        (e.from === edge.from && e.to === edge.to) ||
-        (e.from === edge.to && e.to === edge.from)
-      );
-      const index = pair.findIndex(e => e.from === edge.from && e.to === edge.to);
-      const sign = index === 0 ? +1 : -1;
+      // --- CURVED EDGE LOGIC ---
 
-      const offset = Math.min(42, Math.max(22, dist * 0.10));
-      const perpX = (-dy / dist) * offset;
-      const perpY = ( dx / dist) * offset;
+      // 1. Establish canonical direction (use lower ID as "from")
+      const n1 = (fromNode.id < toNode.id) ? fromNode : toNode;
+      const n2 = (fromNode.id < toNode.id) ? toNode : fromNode;
 
-      const cx = (fromNode.x + toNode.x) / 2 + perpX * sign;
-      const cy = (fromNode.y + toNode.y) / 2 + perpY * sign;
+      // 2. Canonical vector (from n1 to n2)
+      const cdx = n2.x - n1.x;
+      const cdy = n2.y - n1.y;
+      const cdist = Math.hypot(cdx, cdy) || 1;
+      
+      // 3. Sign: n1->n2 curves "up" (+1), n2->n1 curves "down" (-1)
+      const sign = (edge.from === n1.id) ? +1 : -1;
 
-      // mid of curve
+      // 4. Geometry
+      const offset = Math.min(42, Math.max(22, cdist * 0.10));
+      const perpX = (-cdy / cdist) * offset;
+      const perpY = ( cdx / cdist) * offset;
+
+      // 5. Control point for *this specific curve*
+      const midX = (fromNode.x + toNode.x) / 2; // Midpoint of the CHORD
+      const midY = (fromNode.y + toNode.y) / 2;
+      const cx = midX + perpX * sign;
+      const cy = midY + perpY * sign;
+
+      // 6. Label position = Midpoint of *this* quadratic curve (t=0.5)
       const tMid = 0.5;
-      const qx =
-        (1 - tMid) * (1 - tMid) * fromNode.x + 2 * (1 - tMid) * tMid * cx + tMid * tMid * toNode.x;
-      const qy =
-        (1 - tMid) * (1 - tMid) * fromNode.y + 2 * (1 - tMid) * tMid * cy + tMid * tMid * toNode.y;
+      const labelX =
+        (1 - tMid) * (1 - tMid) * fromNode.x +
+        2 * (1 - tMid) * tMid * cx +
+        tMid * tMid * toNode.x;
+      const labelY =
+        (1 - tMid) * (1 - tMid) * fromNode.y +
+        2 * (1 - tMid) * tMid * cy +
+        tMid * tMid * toNode.y;
 
-      // normal at mid
-      const tnx = 2 * (1 - tMid) * (cx - fromNode.x) + 2 * tMid * (toNode.x - cx);
-      const tny = 2 * (1 - tMid) * (cy - fromNode.y) + 2 * tMid * (toNode.y - cy);
-      const tLen = Math.hypot(tnx, tny) || 1;
-      const nx = -tny / tLen;
-      const ny =  tnx / tLen;
-
-      const labelPush = offset * 0.55 + 16;
-      const labelX = qx + nx * labelPush * sign;
-      const labelY = qy + ny * labelPush * sign;
-
+      // 7. Check hit
       if (Math.hypot(x - labelX, y - labelY) <= HIT_R) {
-        return edge; // click selects this exact direction (top/bottom)
+        return edge;
       }
     } else {
-      // single label (straight edge)
+      // --- STRAIGHT EDGE LOGIC ---
       const midX = (fromNode.x + toNode.x) / 2;
       const midY = (fromNode.y + toNode.y) / 2;
       if (Math.hypot(x - midX, y - midY) <= HIT_R) return edge;
     }
-  }
+  } 
+
   return null;
 };
-
   const handleCanvasClick = (e) => {
     if (isRunning) return;
     
@@ -929,28 +929,34 @@ function quadTangentAngle(x0, y0, cx, cy, x1, y1, t = 0.95) {
   const dist = Math.hypot(dx, dy) || 1;
 
 // ========================= CURVED (two opposite directed edges) =========================
+// ========================= CURVED (two opposite directed edges) =========================
+// ========================= CURVED (two opposite directed edges) =========================
 if (hasReverseEdge) {
   
-  // 1️⃣ find both edges between same nodes in the order they were created
-  const pair = edges.filter(e =>
-    (e.from === edge.from && e.to === edge.to) ||
-    (e.from === edge.to && e.to === edge.from)
-  );
+  // 1. Establish canonical direction (use lower ID as "from")
+  const n1 = (fromNode.id < toNode.id) ? fromNode : toNode;
+  const n2 = (fromNode.id < toNode.id) ? toNode : fromNode;
+
+  // 2. Canonical vector (from n1 to n2)
+  const cdx = n2.x - n1.x;
+  const cdy = n2.y - n1.y;
+  const cdist = Math.hypot(cdx, cdy) || 1;
   
-  // determine which one should be "top" and which "bottom"
-  const index = pair.findIndex(e => e.from === edge.from && e.to === edge.to);
-  const sign = index === 0 ? +1 : -1;  // first edge = top, second = bottom
+  // 3. Sign: n1->n2 curves "up" (+1), n2->n1 curves "down" (-1)
+  const sign = (edge.from === n1.id) ? +1 : -1;
 
-  // geometry
-  const offset = Math.min(42, Math.max(22, dist * 0.10)); // spacing of curves
-  const perpX = (-dy / dist) * offset;
-  const perpY = ( dx / dist) * offset;
+  // 4. Geometry
+  const offset = Math.min(42, Math.max(22, cdist * 0.10)); // spacing
+  const perpX = (-cdy / cdist) * offset;
+  const perpY = ( cdx / cdist) * offset;
 
-  // control point (curved)
-  const cx = (fromNode.x + toNode.x) / 2 + perpX * sign;
-  const cy = (fromNode.y + toNode.y) / 2 + perpY * sign;
+  // 5. Control point for *this specific curve*
+  const midX = (fromNode.x + toNode.x) / 2;
+  const midY = (fromNode.y + toNode.y) / 2;
+  const cx = midX + perpX * sign;
+  const cy = midY + perpY * sign;
 
-  // colors
+  // 6. Colors
   const isMST = mstEdges.some(e => e.from === edge.from && e.to === edge.to);
   const isCurrent =
     currentEdge && currentEdge.from === edge.from && currentEdge.to === edge.to;
@@ -962,8 +968,8 @@ if (hasReverseEdge) {
   ctx.lineWidth = isMST ? 4 : 3;
   ctx.stroke();
 
-  // 2️⃣ arrow only at receiver
-  const tArrow = 0.92;
+  // 7. Arrowhead
+  const tArrow = 0.92; // Position on curve (0=start, 1=end)
   const tanX = 2 * (1 - tArrow) * (cx - fromNode.x) + 2 * tArrow * (toNode.x - cx);
   const tanY = 2 * (1 - tArrow) * (cy - fromNode.y) + 2 * tArrow * (toNode.y - cy);
   const angle = Math.atan2(tanY, tanX);
@@ -971,28 +977,16 @@ if (hasReverseEdge) {
   const ay = toNode.y - NODE_RADIUS * Math.sin(angle);
   drawArrowhead(ctx, ax, ay, angle);
 
-  // 3️⃣ label placement (keeps top & bottom separate)
+  // 8. Label position = Midpoint of *this* quadratic curve (t=0.5)
   const tMid = 0.50;
-  const qx =
+  const labelX =
     (1 - tMid) * (1 - tMid) * fromNode.x +
     2 * (1 - tMid) * tMid * cx +
     tMid * tMid * toNode.x;
-  const qy =
+  const labelY =
     (1 - tMid) * (1 - tMid) * fromNode.y +
     2 * (1 - tMid) * tMid * cy +
     tMid * tMid * toNode.y;
-
-  const tnx = 2 * (1 - tMid) * (cx - fromNode.x) +
-              2 * tMid * (toNode.x - cx);
-  const tny = 2 * (1 - tMid) * (cy - fromNode.y) +
-              2 * tMid * (toNode.y - cy);
-  const tLen = Math.hypot(tnx, tny) || 1;
-  const nx = -tny / tLen;
-  const ny =  tnx / tLen;
-
-  const labelPush = offset * 0.55 + 16;
-  const labelX = qx + nx * labelPush * sign;
-  const labelY = qy + ny * labelPush * sign;
 
   const isEditingThis =
     editingEdge &&
@@ -1023,6 +1017,7 @@ if (hasReverseEdge) {
   ctx.moveTo(fromNode.x, fromNode.y);
   ctx.lineTo(toNode.x, toNode.y);
 
+  // ✅ FIXED: Correct MST/Current check for undirected graphs
   const isMST = mstEdges.some(e => 
     (e.from === edge.from && e.to === edge.to) ||
     (!isDirected && e.from === edge.to && e.to === edge.from)
@@ -1052,6 +1047,7 @@ if (hasReverseEdge) {
     editingEdge.from === edge.from &&
     editingEdge.to === edge.to;
 
+  // label background pill
   ctx.fillStyle = isEditingThis ? 'rgba(246,193,119,0.75)' : 'rgba(35,33,54,0.75)';
   ctx.beginPath();
   ctx.roundRect(midX - 22, midY - 12, 44, 24, 6);
@@ -1060,6 +1056,7 @@ if (hasReverseEdge) {
   ctx.lineWidth = 2;
   ctx.stroke();
 
+  // label text
   ctx.fillStyle = isEditingThis ? '#232136' : '#e0def4';
   ctx.font = '14px Arial';
   ctx.textAlign = 'center';
@@ -1706,6 +1703,7 @@ if (hasReverseEdge) {
     <li>When “Directed” is ON, arrows appear and direction matters.</li>
     <li>Dragging from A → B creates a forward arrow only.</li>
     <li>If you also drag from B → A, a reverse arrow is added and shown as a curved line.</li>
+    {/* ✅ UPDATED THIS LINE */}
     <li>Both directions will be the default grey color. They will only turn cyan if they are part of the calculated MST.</li>
     <li>Weights for A→B and B→A are stored separately and can be edited independently.</li>
   </ul>
