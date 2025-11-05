@@ -82,23 +82,43 @@ export default function PrimsVisualizer() {
   };
 
   const findEdgeAt = (x, y) => {
-    for (const edge of edges) {
-      const fromNode = nodes.find(n => n.id === edge.from);
-      const toNode = nodes.find(n => n.id === edge.to);
-      
-      if (!fromNode || !toNode) continue;
-      
-      const midX = (fromNode.x + toNode.x) / 2;
-      const midY = (fromNode.y + toNode.y) / 2;
-      const dx = x - midX;
-      const dy = y - midY;
-      
-      if (Math.sqrt(dx * dx + dy * dy) <= 20) {
-        return edge;
-      }
+  const HIT_R = 18;
+
+  for (const edge of edges) {
+    const fromNode = nodes.find(n => n.id === edge.from);
+    const toNode   = nodes.find(n => n.id === edge.to);
+    if (!fromNode || !toNode) continue;
+
+    const midX = (fromNode.x + toNode.x) / 2;
+    const midY = (fromNode.y + toNode.y) / 2;
+
+    const hasReverse = isDirected && edges.some(e => e.from === edge.to && e.to === edge.from);
+
+    if (hasReverse) {
+      // Two distinct labels: one for A→B (top), one for B→A (bottom)
+      const dx = toNode.x - fromNode.x;
+      const dy = toNode.y - fromNode.y;
+      const len = Math.hypot(dx, dy) || 1;
+
+      const offset = 15;
+      const perpX = (-dy / len) * offset;
+      const perpY = ( dx / len) * offset;
+
+      // Stable split: for one direction use +, for the reverse use -
+      const sign = edge.from < edge.to ? 1 : -1;
+
+      const labelX = midX + perpX * 0.6 * sign;
+      const labelY = midY + perpY * 0.6 * sign;
+
+      if (Math.hypot(x - labelX, y - labelY) <= HIT_R) return edge;
+    } else {
+      // Single label in the middle for undirected or single directed edge
+      if (Math.hypot(x - midX, y - midY) <= HIT_R) return edge;
     }
-    return null;
-  };
+  }
+  return null;
+};
+
 
   const handleCanvasClick = (e) => {
     if (isRunning) return;
@@ -233,6 +253,7 @@ export default function PrimsVisualizer() {
 );
 
 
+
         if (!edgeExists) {
           const weight = Math.round(distance(dragStart, endNode) * 10) / 10; // One decimal place
           setEdges([...edges, { from: dragStart.id, to: endNode.id, weight }]);
@@ -271,7 +292,7 @@ export default function PrimsVisualizer() {
 
   const saveEdgeWeight = () => {
     if (editingEdge) {
-      const newWeight = parseInt(edgeWeightInput);
+      const newWeight = parseFloat(edgeWeightInput);
       if (!isNaN(newWeight)) {
         setEdges(edges.map(edge =>
           edge.from === editingEdge.from && edge.to === editingEdge.to
@@ -879,25 +900,73 @@ const downloadPDF = async () => {
 
   if (hasReverseEdge) {
     // Draw curved line for bidirectional edges
-    const dx = toNode.x - fromNode.x;
-    const dy = toNode.y - fromNode.y;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-    
-    // Perpendicular offset for the curve
-    const offset = 15;
-    const perpX = -dy / distance * offset;
-    const perpY = dx / distance * offset;
-    
-    // Control point for quadratic curve
-    const controlX = (fromNode.x + toNode.x) / 2 + perpX;
-    const controlY = (fromNode.y + toNode.y) / 2 + perpY;
-    
-    ctx.beginPath();
-    ctx.moveTo(fromNode.x, fromNode.y);
-    ctx.quadraticCurveTo(controlX, controlY, toNode.x, toNode.y);
-    ctx.strokeStyle = strokeColor;
-    ctx.lineWidth = lineWidth;
-    ctx.stroke();
+const dx = toNode.x - fromNode.x;
+const dy = toNode.y - fromNode.y;
+const dist = Math.hypot(dx, dy) || 1;
+
+// Perpendicular offset
+const offset = 15;
+const perpX = (-dy / dist) * offset;
+const perpY = ( dx / dist) * offset;
+
+// Put A→B on one side, B→A on the other (stable by id)
+const sign = edge.from < edge.to ? 1 : -1;
+
+// Control point for this specific directed edge
+const controlX = (fromNode.x + toNode.x) / 2 + perpX * sign;
+const controlY = (fromNode.y + toNode.y) / 2 + perpY * sign;
+
+ctx.beginPath();
+ctx.moveTo(fromNode.x, fromNode.y);
+ctx.quadraticCurveTo(controlX, controlY, toNode.x, toNode.y);
+ctx.strokeStyle = strokeColor;
+ctx.lineWidth = lineWidth;
+ctx.stroke();
+
+// Arrow on the curve (unchanged logic, uses control point above)
+if (isDirected) {
+  const t = 0.85;
+  const curveX = (1-t)*(1-t)*fromNode.x + 2*(1-t)*t*controlX + t*t*toNode.x;
+  const curveY = (1-t)*(1-t)*fromNode.y + 2*(1-t)*t*controlY + t*t*toNode.y;
+
+  const tangentX = 2*(1-t)*(controlX - fromNode.x) + 2*t*(toNode.x - controlX);
+  const tangentY = 2*(1-t)*(controlY - fromNode.y) + 2*t*(toNode.y - controlY);
+  const angle = Math.atan2(tangentY, tangentX);
+
+  const arrowSize = 12;
+  ctx.beginPath();
+  ctx.moveTo(curveX, curveY);
+  ctx.lineTo(curveX - arrowSize * Math.cos(angle - Math.PI/6),
+             curveY - arrowSize * Math.sin(angle - Math.PI/6));
+  ctx.moveTo(curveX, curveY);
+  ctx.lineTo(curveX - arrowSize * Math.cos(angle + Math.PI/6),
+             curveY - arrowSize * Math.sin(angle + Math.PI/6));
+  ctx.strokeStyle = strokeColor;
+  ctx.lineWidth = lineWidth;
+  ctx.stroke();
+}
+
+// Weight label for THIS direction (top/bottom separated)
+const labelX = (fromNode.x + toNode.x) / 2 + perpX * 0.6 * sign;
+const labelY = (fromNode.y + toNode.y) / 2 + perpY * 0.6 * sign;
+
+const isEditingThis = editingEdge && editingEdge.from === edge.from && editingEdge.to === edge.to;
+
+ctx.fillStyle = isEditingThis ? 'rgba(246, 193, 119, 0.7)' : 'rgba(35, 33, 54, 0.6)';
+ctx.beginPath();
+ctx.roundRect(labelX - 18, labelY - 12, 36, 24, 6);
+ctx.fill();
+
+ctx.strokeStyle = isEditingThis ? 'rgba(234, 154, 151, 0.8)' : 'rgba(68, 65, 90, 0.7)';
+ctx.lineWidth = 2;
+ctx.stroke();
+
+ctx.fillStyle = isEditingThis ? '#232136' : '#e0def4';
+ctx.font = '14px Arial';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+ctx.fillText(String(edge.weight), labelX, labelY);
+
 
     if (isDirected) {
       // Calculate arrow position on the curve
@@ -1347,6 +1416,7 @@ const downloadPDF = async () => {
               <span className="font-semibold" style={{ color: '#e0def4' }}>Edit edge weight:</span>
               <input
                 type="number"
+                step="0.1"
                 value={edgeWeightInput}
                 onChange={(e) => setEdgeWeightInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && saveEdgeWeight()}
