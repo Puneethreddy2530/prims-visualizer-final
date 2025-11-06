@@ -1,0 +1,19 @@
+{
+  "files": {
+    "main.css": "/prims-visualizer-final/static/css/main.3f1ecaee.css",
+    "main.js": "/prims-visualizer-final/static/js/main.61e5987d.js",
+    "static/js/977.45d0eb93.chunk.js": "/prims-visualizer-final/static/js/977.45d0eb93.chunk.js",
+    "static/js/455.6e0322b4.chunk.js": "/prims-visualizer-final/static/js/455.6e0322b4.chunk.js",
+    "static/js/453.9af2c61f.chunk.js": "/prims-visualizer-final/static/js/453.9af2c61f.chunk.js",
+    "index.html": "/prims-visualizer-final/index.html",
+    "main.3f1ecaee.css.map": "/prims-visualizer-final/static/css/main.3f1ecaee.css.map",
+    "main.61e5987d.js.map": "/prims-visualizer-final/static/js/main.61e5987d.js.map",
+    "977.45d0eb93.chunk.js.map": "/prims-visualizer-final/static/js/977.45d0eb93.chunk.js.map",
+    "455.6e0322b4.chunk.js.map": "/prims-visualizer-final/static/js/455.6e0322b4.chunk.js.map",
+    "453.9af2c61f.chunk.js.map": "/prims-visualizer-final/static/js/453.9af2c61f.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.3f1ecaee.css",
+    "static/js/main.61e5987d.js"
+  ]
+}
