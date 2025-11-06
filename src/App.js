@@ -1980,7 +1980,6 @@ if (hasReverseEdge) {
         />
         <div style={{ color: '#e0def4' }}>
           <p className="font-bold">Dr. Swaminathan Annadurai</p>
-          <p>Faculty Guide</p>
         </div>
       </div>
 
